@@ -1,7 +1,7 @@
 # Obsidian Calendar Editor
 
 A desktop application for creating and managing calendar events for Obsidian Full Calendar plugin.
-
+![Look](image.png)
 ## Features
 
 - Create, edit, and delete calendar events
