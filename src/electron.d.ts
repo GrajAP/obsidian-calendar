@@ -1,5 +1,7 @@
 export {};
 
+import type { ImportCalendarEventsResult } from './types';
+
 interface DirectoryEntry {
   name: string;
   path: string;
@@ -14,6 +16,7 @@ declare global {
       writeFile: (path: string, content: string) => Promise<{ success?: boolean; error?: string }>;
       deleteFile: (path: string) => Promise<{ success?: boolean; error?: string }>;
       selectDirectory: () => Promise<{ path?: string }>;
+      importCalendarEvents: (eventsFolder: string) => Promise<ImportCalendarEventsResult | { error: string }>;
     };
   }
 }

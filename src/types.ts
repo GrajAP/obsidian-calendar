@@ -7,6 +7,10 @@ export interface Event {
   completed: string | null;
   path?: string;
   timezone?: string;
+  source?: 'sports' | 'holiday';
+  birthday?: boolean;
+  nameDay?: boolean;
+  dateOfBirth?: string;
   seriesId?: string;
   seriesParentId?: string;
   generatedOccurrence?: boolean;
@@ -43,3 +47,18 @@ export interface SourceFileState {
   title: string;
   content: string;
 }
+
+export interface Toast {
+  id: string;
+  tone: 'success' | 'error';
+  message: string;
+}
+
+export interface ImportCalendarEventsResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+}
+
+export type ImportSportsEventsResult = ImportCalendarEventsResult;

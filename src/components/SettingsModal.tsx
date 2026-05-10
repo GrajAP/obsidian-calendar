@@ -6,9 +6,11 @@ interface SettingsModalProps {
   settings: AppSettings;
   onSave: (settings: AppSettings) => void;
   onCancel: () => void;
+  onImportCalendarEvents: () => void;
+  importingCalendarEvents: boolean;
 }
 
-const SettingsModal = ({ settings, onSave, onCancel }: SettingsModalProps) => {
+const SettingsModal = ({ settings, onSave, onCancel, onImportCalendarEvents, importingCalendarEvents }: SettingsModalProps) => {
   const [draft, setDraft] = useState(settings);
 
   const chooseFolder = async () => {
@@ -63,6 +65,16 @@ const SettingsModal = ({ settings, onSave, onCancel }: SettingsModalProps) => {
               <option value="sun">{t(draft, 'Sunday', 'Niedziela')}</option>
             </select>
           </label>
+
+          <section className="settings-action-panel">
+            <div>
+              <span>{t(draft, 'Calendar import', 'Import kalendarza')}</span>
+              <p>{t(draft, 'Fetch future FC Barcelona, Champions League, Poland national team matches, and Polish public holidays into .md files.', 'Pobierz przyszłe mecze FC Barcelony, Ligi Mistrzów, reprezentacji Polski oraz święta państwowe do plików .md.')}</p>
+            </div>
+            <button type="button" className="secondary-btn" onClick={onImportCalendarEvents} disabled={importingCalendarEvents}>
+              {importingCalendarEvents ? t(draft, 'Fetching...', 'Pobieranie...') : t(draft, 'Fetch events', 'Pobierz wydarzenia')}
+            </button>
+          </section>
         </div>
 
         <footer className="form-actions">

@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('electron', {
   writeFile: (path: string, content: string) => ipcRenderer.invoke('write-file', path, content),
   deleteFile: (path: string) => ipcRenderer.invoke('delete-file', path),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  importCalendarEvents: (eventsFolder: string) => ipcRenderer.invoke('import-calendar-events', eventsFolder),
 });

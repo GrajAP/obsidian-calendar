@@ -32,6 +32,11 @@ const parseFrontmatterValue = (frontmatter: string, key: string) => {
 };
 
 const parseBooleanValue = (value?: string) => value === 'true';
+const parseSource = (content: string): Event['source'] => {
+  if (/^(?:sports-import:\s*true|calendar-import:\s*sports)\s*$/m.test(content)) return 'sports';
+  if (/^(?:holiday-import:\s*true|calendar-import:\s*holiday)\s*$/m.test(content)) return 'holiday';
+  return undefined;
+};
 
 const parseWeekdays = (value?: string) => {
   if (!value) return undefined;
@@ -58,6 +63,7 @@ export const parseFrontmatter = (content: string): Event | null => {
 
   const allDay = parseFrontmatterValue(frontmatter, 'allDay') !== 'false';
   const completed = parseFrontmatterValue(frontmatter, 'completed');
+  const source = parseFrontmatterValue(frontmatter, 'source') as Event['source'] | undefined;
   const recurringType = parseFrontmatterValue(frontmatter, 'recurringType') as Event['recurring']['type'] | undefined;
   const recurringInterval = Number(parseFrontmatterValue(frontmatter, 'recurringInterval') || 1);
   const recurringEnd = parseFrontmatterValue(frontmatter, 'recurringEnd');
@@ -74,6 +80,10 @@ export const parseFrontmatter = (content: string): Event | null => {
     endTime: parseFrontmatterValue(frontmatter, 'endTime'),
     completed: completed && completed !== 'null' ? completed : null,
     timezone: parseFrontmatterValue(frontmatter, 'timezone'),
+    source: source || parseSource(content),
+    birthday: parseBooleanValue(parseFrontmatterValue(frontmatter, 'birthday')),
+    nameDay: parseBooleanValue(parseFrontmatterValue(frontmatter, 'nameDay')),
+    dateOfBirth: parseFrontmatterValue(frontmatter, 'dateOfBirth'),
     seriesId: parseFrontmatterValue(frontmatter, 'seriesId'),
     seriesParentId: parseFrontmatterValue(frontmatter, 'seriesParentId'),
     generatedOccurrence: parseBooleanValue(parseFrontmatterValue(frontmatter, 'generatedOccurrence')),
@@ -98,6 +108,10 @@ export const formatFrontmatter = (event: Event): string => {
 
   lines.push(`date: ${event.date}`);
   lines.push(`completed: ${event.completed || 'null'}`);
+  if (event.source) lines.push(`source: ${event.source}`);
+  if (event.birthday) lines.push('birthday: true');
+  if (event.nameDay) lines.push('nameDay: true');
+  if (event.dateOfBirth) lines.push(`dateOfBirth: ${event.dateOfBirth}`);
   if (event.timezone) lines.push(`timezone: ${event.timezone}`);
   if (event.seriesId) lines.push(`seriesId: ${event.seriesId}`);
   if (event.seriesParentId) lines.push(`seriesParentId: ${event.seriesParentId}`);
@@ -200,7 +214,9 @@ export const buildMaterializedOccurrences = (event: Event) => {
       seriesId: undefined,
       seriesParentId: seriesId,
       generatedOccurrence: true,
-      completed: null
+      completed: null,
+      birthday: event.birthday,
+      nameDay: event.nameDay
     }));
 };
 

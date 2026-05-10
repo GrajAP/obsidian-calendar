@@ -1,4 +1,8 @@
+import { AppSettings } from '../types';
+import { t } from '../utils/settings';
+
 interface SourceFileModalProps {
+  settings: AppSettings;
   path: string;
   title: string;
   content: string;
@@ -11,6 +15,7 @@ interface SourceFileModalProps {
 }
 
 const SourceFileModal = ({
+  settings,
   path,
   title,
   content,
@@ -25,24 +30,24 @@ const SourceFileModal = ({
     <section className="source-file-modal" onClick={event => event.stopPropagation()}>
       <header className="form-header">
         <div>
-          <p>Plik źródłowy .md</p>
+          <p>{t(settings, 'Source .md file', 'Plik źródłowy .md')}</p>
           <h2>{title}</h2>
         </div>
-        <button type="button" className="icon-btn" onClick={onClose} title="Zamknij">×</button>
+        <button type="button" className="icon-btn" onClick={onClose} title={t(settings, 'Close', 'Zamknij')}>×</button>
       </header>
 
       <div className="source-file-path">{path}</div>
 
       <label className="form-group source-file-group">
-        <span>Zawartość</span>
+        <span>{t(settings, 'Content', 'Zawartość')}</span>
         <textarea value={content} onChange={event => onChange(event.target.value)} spellCheck={false} />
       </label>
 
       <footer className="form-actions">
-        <button type="button" className="secondary-btn" onClick={onReload}>Przywróć z dysku</button>
-        <button type="button" className="secondary-btn" onClick={onFormatYaml}>Format YAML</button>
-        <button type="button" className="secondary-btn" onClick={onClose}>Zamknij</button>
-        <button type="button" className="primary-btn" onClick={onSave} disabled={saving}>{saving ? 'Zapisywanie...' : 'Zapisz plik'}</button>
+        <button type="button" className="secondary-btn" onClick={onReload}>{t(settings, 'Restore from disk', 'Przywróć z dysku')}</button>
+        <button type="button" className="secondary-btn" onClick={onFormatYaml}>{t(settings, 'Format YAML', 'Format YAML')}</button>
+        <button type="button" className="secondary-btn" onClick={onClose}>{t(settings, 'Close', 'Zamknij')}</button>
+        <button type="button" className="primary-btn" onClick={onSave} disabled={saving}>{saving ? t(settings, 'Saving...', 'Zapisywanie...') : t(settings, 'Save file', 'Zapisz plik')}</button>
       </footer>
     </section>
   </div>

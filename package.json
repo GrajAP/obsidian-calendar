@@ -3,14 +3,18 @@
   "productName": "Obsidian Calendar Editor",
   "version": "1.0.0",
   "description": "A desktop editor for Obsidian Full Calendar event notes.",
+  "packageManager": "bun@1.2.15",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
     "start": "electron-forge start",
+    "start:system-frame": "OBSIDIAN_CALENDAR_SYSTEM_FRAME=1 electron-forge start",
+    "start:x11": "OBSIDIAN_CALENDAR_SYSTEM_FRAME=1 OBSIDIAN_CALENDAR_OZONE_PLATFORM=x11 ELECTRON_OZONE_PLATFORM_HINT=x11 electron-forge start",
+    "preview:browser": "vite --host 127.0.0.1",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx src src/main.ts src/preload.ts src/electron.d.ts forge.config.ts"
   },
   "keywords": [],
   "author": {

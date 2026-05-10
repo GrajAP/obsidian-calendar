@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CalendarView from './components/CalendarView';
 import EventForm from './components/EventForm';
 import SettingsModal from './components/SettingsModal';
 import SourceFileModal from './components/SourceFileModal';
-import { AppSettings, Event, FileEntry, SourceFileState } from './types';
+import { AppSettings, Event, FileEntry, ImportCalendarEventsResult, SourceFileState, Toast } from './types';
 import { parseDateKey, toDateKey } from './utils/calendar';
+import { demoEvents } from './utils/demoEvents';
 import { buildMaterializedOccurrences, defaultSeriesId, formatFrontmatter, getEventFilePath, parseFrontmatter, sortEvents } from './utils/events';
-import { loadSettings, saveSettings } from './utils/settings';
+import { loadSettings, saveSettings, t } from './utils/settings';
 
 const App = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -22,14 +23,31 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [sourceFile, setSourceFile] = useState<SourceFileState | null>(null);
   const [sourceFileSaving, setSourceFileSaving] = useState(false);
+  const [calendarImporting, setCalendarImporting] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const autoImportFolderRef = useRef<string | null>(null);
+
+  const pushToast = (tone: Toast['tone'], message: string) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setToasts(current => [...current, { id, tone, message }]);
+    window.setTimeout(() => {
+      setToasts(current => current.filter(toast => toast.id !== id));
+    }, 2800);
+  };
 
   const reloadEvents = async () => {
     setLoading(true);
     setError(null);
 
+    if (!window.electron) {
+      setEvents(sortEvents(demoEvents));
+      setLoading(false);
+      return;
+    }
+
     const files = await window.electron?.readDirectory(settings.eventsFolder);
     if (!files || 'error' in files) {
-      setError(files?.error || 'Nie udało się odczytać katalogu z plikami.');
+      setError(files?.error || t(settings, 'Could not read events folder.', 'Nie udało się odczytać katalogu z plikami.'));
       setLoading(false);
       return;
     }
@@ -77,11 +95,26 @@ const App = () => {
     const oldGeneratedPaths = new Set(oldGenerated.map(generated => generated.path));
 
     for (const generated of oldGenerated) {
-      await window.electron?.deleteFile(generated.path as string);
+      const deleteResult = await window.electron?.deleteFile(generated.path as string);
+      if (deleteResult?.error) {
+        pushToast('error', deleteResult.error);
+        return;
+      }
     }
 
-    await window.electron?.writeFile(filePath, formatFrontmatter(sourceEvent));
-    if (event.path && event.path !== filePath && !oldGeneratedPaths.has(event.path)) await window.electron?.deleteFile(event.path);
+    const writeResult = await window.electron?.writeFile(filePath, formatFrontmatter(sourceEvent));
+    if (writeResult?.error) {
+      pushToast('error', writeResult.error);
+      return;
+    }
+
+    if (event.path && event.path !== filePath && !oldGeneratedPaths.has(event.path)) {
+      const deleteResult = await window.electron?.deleteFile(event.path);
+      if (deleteResult?.error) {
+        pushToast('error', deleteResult.error);
+        return;
+      }
+    }
 
     if (sourceEvent.recurring && sourceEvent.seriesId) {
       const generatedOccurrences = buildMaterializedOccurrences(sourceEvent);
@@ -92,7 +125,13 @@ const App = () => {
           existing.path === occurrencePath && existing.path !== event.path && !oldGeneratedPaths.has(existing.path)
         ));
 
-        if (!conflict) await window.electron?.writeFile(occurrencePath, formatFrontmatter(occurrence));
+        if (!conflict) {
+          const occurrenceResult = await window.electron?.writeFile(occurrencePath, formatFrontmatter(occurrence));
+          if (occurrenceResult?.error) {
+            pushToast('error', occurrenceResult.error);
+            return;
+          }
+        }
       }
     }
 
@@ -100,6 +139,7 @@ const App = () => {
     setViewDate(parseDateKey(sourceEvent.date));
     setShowForm(false);
     setEditingEvent(undefined);
+    pushToast('success', t(settings, 'Event saved.', 'Wydarzenie zapisane.'));
     reloadEvents();
   };
 
@@ -108,17 +148,30 @@ const App = () => {
     if (editingEvent.seriesId) {
       const generated = events.filter(event => event.seriesParentId === editingEvent.seriesId && event.path);
       for (const event of generated) {
-        await window.electron?.deleteFile(event.path as string);
+        const deleteResult = await window.electron?.deleteFile(event.path as string);
+        if (deleteResult?.error) {
+          pushToast('error', deleteResult.error);
+          return;
+        }
       }
     }
-    await window.electron?.deleteFile(editingEvent.path);
+    const deleteResult = await window.electron?.deleteFile(editingEvent.path);
+    if (deleteResult?.error) {
+      pushToast('error', deleteResult.error);
+      return;
+    }
     setShowForm(false);
     setEditingEvent(undefined);
+    pushToast('success', t(settings, 'Event deleted.', 'Wydarzenie usunięte.'));
     reloadEvents();
   };
 
   const handleOpenFile = async (filePath: string) => {
     const result = await window.electron?.readFile(filePath);
+    if (result?.error) {
+      pushToast('error', result.error);
+      return;
+    }
     if (!result?.content) return;
     setSourceFile({
       path: filePath,
@@ -130,19 +183,29 @@ const App = () => {
   const handleSaveSourceFile = async () => {
     if (!sourceFile) return;
     setSourceFileSaving(true);
-    await window.electron?.writeFile(sourceFile.path, sourceFile.content);
+    const writeResult = await window.electron?.writeFile(sourceFile.path, sourceFile.content);
     setSourceFileSaving(false);
+    if (writeResult?.error) {
+      pushToast('error', writeResult.error);
+      return;
+    }
     setSourceFile(null);
     setShowForm(false);
     setEditingEvent(undefined);
+    pushToast('success', t(settings, 'File saved.', 'Plik zapisany.'));
     reloadEvents();
   };
 
   const handleReloadSourceFile = async () => {
     if (!sourceFile) return;
     const result = await window.electron?.readFile(sourceFile.path);
+    if (result?.error) {
+      pushToast('error', result.error);
+      return;
+    }
     if (!result?.content) return;
     setSourceFile(current => current ? { ...current, content: result.content as string } : current);
+    pushToast('success', t(settings, 'Reloaded from disk.', 'Przywrócono z dysku.'));
   };
 
   const handleFormatSourceYaml = () => {
@@ -178,13 +241,76 @@ const App = () => {
     } : current);
   };
 
+  const isImportCalendarEventsResult = (value: unknown): value is ImportCalendarEventsResult => (
+    typeof value === 'object'
+    && value !== null
+    && 'created' in value
+    && 'updated' in value
+    && 'skipped' in value
+    && 'errors' in value
+  );
+
+  const importCalendarEvents = async ({ silent }: { silent: boolean }) => {
+    if (!window.electron?.importCalendarEvents) {
+      if (!silent) {
+        pushToast('error', t(settings, 'Calendar import is only available in the Electron app.', 'Import kalendarza jest dostępny tylko w aplikacji Electron.'));
+      }
+      return;
+    }
+
+    setCalendarImporting(true);
+    const result = await window.electron.importCalendarEvents(settings.eventsFolder);
+    setCalendarImporting(false);
+
+    if ('error' in result) {
+      pushToast('error', result.error);
+      return;
+    }
+
+    if (!isImportCalendarEventsResult(result)) {
+      pushToast('error', t(settings, 'Could not import calendar events.', 'Nie udało się zaimportować wydarzeń.'));
+      return;
+    }
+
+    if (result.created > 0 || result.updated > 0) {
+      await reloadEvents();
+    }
+
+    const summary = t(
+      settings,
+      `Calendar import: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`,
+      `Import kalendarza: ${result.created} dodano, ${result.updated} zaktualizowano, ${result.skipped} pominięto.`
+    );
+
+    if (result.errors.length) {
+      pushToast('error', `${summary} ${result.errors[0]}`);
+      return;
+    }
+
+    if (!silent && (result.created > 0 || result.updated > 0 || result.skipped > 0)) {
+      pushToast('success', summary);
+    }
+  };
+
+  const handleImportCalendarEvents = async () => {
+    await importCalendarEvents({ silent: false });
+  };
+
+  useEffect(() => {
+    if (!window.electron?.importCalendarEvents) return;
+    if (autoImportFolderRef.current === settings.eventsFolder) return;
+
+    autoImportFolderRef.current = settings.eventsFolder;
+    void importCalendarEvents({ silent: true });
+  }, [settings.eventsFolder]);
+
   return (
     <div id="app">
       <div className="main-content">
-        {loading && <div className="state-screen">Ładowanie plików .md...</div>}
+        {loading && <div className="state-screen">{t(settings, 'Loading .md files...', 'Ładowanie plików .md...')}</div>}
         {error && (
           <div className="state-screen error-state">
-            <strong>Nie mogę otworzyć kalendarza</strong>
+            <strong>{t(settings, 'Cannot open calendar', 'Nie mogę otworzyć kalendarza')}</strong>
             <span>{error}</span>
           </div>
         )}
@@ -213,6 +339,7 @@ const App = () => {
       {showForm && (
         <EventForm
           event={editingEvent}
+          settings={settings}
           onSave={handleSave}
           onCancel={() => { setShowForm(false); setEditingEvent(undefined); }}
           onDelete={editingEvent?.path ? handleDelete : undefined}
@@ -224,6 +351,8 @@ const App = () => {
         <SettingsModal
           settings={settings}
           onCancel={() => setShowSettings(false)}
+          onImportCalendarEvents={handleImportCalendarEvents}
+          importingCalendarEvents={calendarImporting}
           onSave={(nextSettings) => {
             setSettings(nextSettings);
             saveSettings(nextSettings);
@@ -234,6 +363,7 @@ const App = () => {
 
       {sourceFile && (
         <SourceFileModal
+          settings={settings}
           path={sourceFile.path}
           title={sourceFile.title}
           content={sourceFile.content}
@@ -244,6 +374,16 @@ const App = () => {
           onFormatYaml={handleFormatSourceYaml}
           onClose={() => setSourceFile(null)}
         />
+      )}
+
+      {toasts.length > 0 && (
+        <div className="toast-stack" aria-live="polite">
+          {toasts.map(toast => (
+            <div key={toast.id} className={`toast ${toast.tone}`}>
+              {toast.message}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
