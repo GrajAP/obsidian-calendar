@@ -1,8 +1,8 @@
 {
   "name": "obsidian-calendar",
-  "productName": "obsidian-calendar",
+  "productName": "Obsidian Calendar Editor",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "A desktop editor for Obsidian Full Calendar event notes.",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
@@ -28,16 +28,23 @@
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",
     "@electron/fuses": "^1.8.0",
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.5.0",
     "electron": "42.0.1",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.3.0",
     "typescript": "~4.5.4",
     "vite": "^5.4.21"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
   }
 }
