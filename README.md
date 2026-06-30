@@ -1,36 +1,37 @@
 # Obsidian Calendar Editor
 
-A desktop application for creating and managing calendar events for Obsidian Full Calendar plugin.
+Desktop editor for Obsidian Full Calendar notes.
+
+## What this app is
+I wrote this to avoid juggling multiple calendar tools and keep all events in one Obsidian vault.  
+The app lets you create recurring events directly in `.md` files with YAML frontmatter compatible with [Obsidian Full Calendar](https://github.com/obsidian-community/obsidian-full-calendar).
+
 ![Look](image.png)
-## Features
 
-- Create, edit, and delete calendar events
-- Month, week, day, and list view modes
-- Recurring events support (daily, weekly, monthly)
-- Import events from your system calendar
-- Creates `.md` files with YAML frontmatter compatible with Obsidian Full Calendar
+## What it does
+- Add, edit, and delete events
+- Switch between month/week/day/list layouts
+- Set recurrence (daily, weekly, monthly)
+- Import from system calendar sources
+- Save each event as markdown in a selected vault folder
 
-## Requirements
+## Quick start
+1. Create `/obsidian-calendar` release for your platform and run it, or run from source (below).
+2. Open settings and set the events folder path in your vault.
+3. Open Obsidian and point Full Calendar to the same folder.
 
-- Obsidian vault with [Full Calendar](https://github.com/obsidian-community/obsidian-full-calendar) plugin installed
+## Development
+```bash
+bun install
+bun run start
+bun run make
+```
 
-## Setup
+## Notes for recruiters
+This app is in active maintenance. It uses Electron + React + TypeScript, with practical UX polish added as I use it daily.
 
-1. Download the latest release for your platform from the releases page
-2. Extract and run the application
-
-## Configuration
-
-1. Open Settings (gear icon)
-2. Set the path to your Obsidian vault's events folder (e.g., `~/Documents/Obsidian Vault/obsidian/Events`)
-3. The app will read and write `.md` files in this folder
-
-## Event File Format
-
-Events are stored as markdown files with YAML frontmatter:
-
+## Event file structure
 ```yaml
----
 title: Meeting
 allDay: false
 startTime: 14:00
@@ -40,25 +41,4 @@ completed: null
 recurringType: weekly
 recurringInterval: 1
 recurringMaterializeCount: 52
----
-#event
-```
-
-## Using with Obsidian
-
-1. Configure Full Calendar in Obsidian to use the same folder
-2. The editor and Obsidian will both read/write to the same `.md` files
-3. Changes sync automatically
-
-## Development
-
-```bash
-# Install dependencies
-bun install
-
-# Run in development
-bun run start
-
-# Build
-bun run make
 ```
